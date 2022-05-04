@@ -1,57 +1,49 @@
-class Node:
-    """Linked List element."""
-    
+import linkedlist.singly_linked_list
+
+
+class Node(linkedlist.singly_linked_list.Node):
+    """Doubly Linked List element."""
+
     def __init__(self, data) -> None:
-        self.data = data
-        self.next = None
-
-    def __repr__(self) -> str:
-        return str(self.data)
+        super().__init__(data)
+        self.prev = None
 
 
-class LinkedList:
-    """Linked List data structure."""
+class LinkedList(linkedlist.singly_linked_list.LinkedList):
+    """Doubly Linked List data structure."""
 
-    name = 'singly_linked_list'
+    name = 'doubly_linked_list'
 
     def __init__(self, items=None) -> None:
         self.head = None
+        self.tail = None
         if items is not None:
             node = Node(items.pop(0))
-            self.head = node
+            self.head = self.tail = node
             for item in items:
                 node.next = Node(item)
-                node = node.next
-    
-    def __iter__(self):
-        node = self.head
-        while node is not None:
-            yield node
-            node = node.next
-
-    def __repr__(self) -> str:
-        nodes_data = []
-        for node in self:
-            nodes_data.append(str(node.data))
-        return f'{self.name}([' + ', '.join(nodes_data) + '])'
+                node.prev, node = node, node.next
+                self.tail = node
 
     def append(self, item) -> None:
         """Append new node to the end of list."""
         new_node = Node(item)
         if self.head is None:
-            self.head = new_node
+            self.head = self.tail = new_node
         else:
-            for node in self:
-                pass
-            node.next = new_node
+            self.tail.next = new_node
+            new_node.prev, self.tail = self.tail, new_node
 
     def prepend(self, item) -> None:
         """Prepend list with new node."""
         new_node = Node(item)
         first_node = self.head
         self.head = new_node
-        if first_node is not None:
+        if first_node is None:
+            self.tail = new_node
+        else:
             new_node.next = first_node
+            first_node.prev = new_node
 
     def insert(self, item, after_node_data):
         """Insert new node after node with specified data."""
@@ -60,13 +52,13 @@ class LinkedList:
         for node in self:
             if node.data == after_node_data:
                 new_node = Node(item)
-                node.next, new_node.next = new_node, node.next
+                new_node.prev = node
+                new_node.next = node.next
+                node.next = new_node
+                if new_node.next is None:
+                    self.tail = new_node
                 return
         raise ValueError(f'Node with data {after_node_data} not found')
-
-    def clean(self):
-        """Clean list."""
-        self.__init__()
 
     def remove(self, node_data):
         """Remove node with specified data from list."""
@@ -76,9 +68,17 @@ class LinkedList:
         for node in self:
             if node.data == node_data and type(node.data) == type(node_data):
                 if prev_node is None:
+                    # Removing first element
                     self.head = node.next
+                    self.head.prev = None
                 else:
-                    prev_node.next = node.next
+                    next_node = node.next
+                    prev_node.next = next_node
+                    if next_node is None:
+                        # Removing last element
+                        self.tail = prev_node
+                    else:
+                        next_node.prev = prev_node
                 return
             prev_node = node
         raise ValueError(f'Node with data {node_data} not found')
